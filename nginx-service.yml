@@ -1,0 +1,15 @@
+apiVersion: v1 # Kubernetes API version
+kind: Service # Kubernetes resource kind we are creating
+metadata:
+  name: nginx-svc
+  labels:
+    name: nginx-svc
+spec:
+  ports:
+    - port: 8000 # The port that the service is running on in the cluster
+      targetPort: 8000 # The port exposed by the service
+      protocol: TCP
+      #nodePort: 31000
+  selector:
+    app: nginx
+  type: LoadBalancer # type of the service. LoadBalancer indicates that our service will be external.

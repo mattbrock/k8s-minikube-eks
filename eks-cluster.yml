@@ -1,0 +1,12 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: simple-webapp
+  region: eu-west-2
+  version: "1.27"
+
+nodeGroups:
+  - name: simple-webapp-nodegroup
+    instanceType: t3.large
+    desiredCapacity: 2
