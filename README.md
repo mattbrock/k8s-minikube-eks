@@ -69,13 +69,15 @@ Verify that kubectl can access the cluster:
 	
 Change Docker repo in these files if necessary.
 
-Do SW deployment then service and check it works:
+Do SW deployment then service:
 
 	$ kubectl apply -f simple-webapp-deployment.yml 
 	deployment.apps/simple-webapp created
 	
 	$ kubectl apply -f simple-webapp-service.yml 
 	service/simple-webapp-svc created
+
+Check they're running:
 
 	$ kubectl get deployment simple-webapp
 	NAME            READY   UP-TO-DATE   AVAILABLE   AGE
@@ -108,6 +110,10 @@ Do nginx config map, deployment and service then check:
 	service/nginx-svc created
 
 Check:
+
+    $ kubectl get configmap nginx-config
+    NAME           DATA   AGE
+    nginx-config   1      7m29s
 
 	$ kubectl get deployment nginx
 	NAME    READY   UP-TO-DATE   AVAILABLE   AGE
@@ -155,17 +161,184 @@ In a separate tab, open the minikube dashboard:
 
 The dashboard should open in your web browser:
 
-![minikube dashboard](minikube_dashboard.png)
+![minikube dashboard](README-images/minikube-dashboard.png)
 
 Destroy local cluster in minikube:
 
     minikube delete
     
-## Amazon EKS
+## Amazon EKS cluster with eksctl
 
-	eksctl create cluster -f eks-cluster.yml
-	eksctl delete cluster -f eks-cluster.yml --wait
+Ensure AWS CLI environment set up correctly etc.
 
-When moving machines, to update minikube config:
+Create cluster using eksctl config file:
+
+	$ eksctl create cluster -f eks-cluster.yml
+	2023-08-22 14:54:07 [ℹ]  eksctl version 0.153.0-dev+a79b3826a.2023-08-18T10:03:46Z
+	2023-08-22 14:54:07 [ℹ]  using region eu-west-2
+	2023-08-22 14:54:07 [ℹ]  setting availability zones to [eu-west-2c eu-west-2a eu-west-2b]
+	2023-08-22 14:54:07 [ℹ]  subnets for eu-west-2c - public:192.168.0.0/19 private:192.168.96.0/19
+	2023-08-22 14:54:07 [ℹ]  subnets for eu-west-2a - public:192.168.32.0/19 private:192.168.128.0/19
+	2023-08-22 14:54:07 [ℹ]  subnets for eu-west-2b - public:192.168.64.0/19 private:192.168.160.0/19
+	2023-08-22 14:54:07 [ℹ]  nodegroup "simple-webapp-nodegroup" will use "ami-0f3589a95ffd274bf" [AmazonLinux2/1.27]
+	2023-08-22 14:54:07 [ℹ]  using Kubernetes version 1.27
+	2023-08-22 14:54:07 [ℹ]  creating EKS cluster "simple-webapp" in "eu-west-2" region with un-managed nodes
+	2023-08-22 14:54:07 [ℹ]  1 nodegroup (simple-webapp-nodegroup) was included (based on the include/exclude rules)
+	2023-08-22 14:54:07 [ℹ]  will create a CloudFormation stack for cluster itself and 1 nodegroup stack(s)
+	2023-08-22 14:54:07 [ℹ]  will create a CloudFormation stack for cluster itself and 0 managed nodegroup stack(s)
+	2023-08-22 14:54:07 [ℹ]  if you encounter any issues, check CloudFormation console or try 'eksctl utils describe-stacks --region=eu-west-2 --cluster=simple-webapp'
+	2023-08-22 14:54:07 [ℹ]  Kubernetes API endpoint access will use default of {publicAccess=true, privateAccess=false} for cluster "simple-webapp" in "eu-west-2"
+	2023-08-22 14:54:07 [ℹ]  CloudWatch logging will not be enabled for cluster "simple-webapp" in "eu-west-2"
+	2023-08-22 14:54:07 [ℹ]  you can enable it with 'eksctl utils update-cluster-logging --enable-types={SPECIFY-YOUR-LOG-TYPES-HERE (e.g. all)} --region=eu-west-2 --cluster=simple-webapp'
+	2023-08-22 14:54:07 [ℹ]  
+	2 sequential tasks: { create cluster control plane "simple-webapp", 
+	    2 sequential sub-tasks: { 
+	        wait for control plane to become ready,
+	        create nodegroup "simple-webapp-nodegroup",
+	    } 
+	}
+	2023-08-22 14:54:07 [ℹ]  building cluster stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:54:07 [ℹ]  deploying stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:54:37 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:55:08 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:56:08 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:57:08 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:58:08 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:59:08 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 15:00:08 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 15:01:08 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 15:02:08 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 15:04:09 [ℹ]  building nodegroup stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 15:04:09 [ℹ]  --nodes-min=2 was set automatically for nodegroup simple-webapp-nodegroup
+	2023-08-22 15:04:09 [ℹ]  --nodes-max=2 was set automatically for nodegroup simple-webapp-nodegroup
+	2023-08-22 15:04:10 [ℹ]  deploying stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 15:04:10 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 15:04:40 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 15:05:18 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 15:06:14 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 15:07:23 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 15:07:23 [ℹ]  waiting for the control plane to become ready
+	2023-08-22 15:07:23 [✔]  saved kubeconfig as "/Users/brock/.kube/config"
+	2023-08-22 15:07:23 [ℹ]  no tasks
+	2023-08-22 15:07:23 [✔]  all EKS cluster resources for "simple-webapp" have been created
+	2023-08-22 15:07:23 [ℹ]  adding identity "arn:aws:iam::318951153566:role/eksctl-simple-webapp-nodegroup-si-NodeInstanceRole-WKJIY951Q1WZ" to auth ConfigMap
+	2023-08-22 15:07:23 [ℹ]  nodegroup "simple-webapp-nodegroup" has 0 node(s)
+	2023-08-22 15:07:23 [ℹ]  waiting for at least 2 node(s) to become ready in "simple-webapp-nodegroup"
+	2023-08-22 15:07:51 [ℹ]  nodegroup "simple-webapp-nodegroup" has 2 node(s)
+	2023-08-22 15:07:51 [ℹ]  node "ip-192-168-23-36.eu-west-2.compute.internal" is ready
+	2023-08-22 15:07:51 [ℹ]  node "ip-192-168-82-170.eu-west-2.compute.internal" is ready
+	2023-08-22 15:07:51 [✖]  parsing kubectl version string  (upstream error: ) / "0.0.0": Version string empty
+	2023-08-22 15:07:51 [ℹ]  cluster should be functional despite missing (or misconfigured) client binaries
+	2023-08-22 15:07:51 [✔]  EKS cluster "simple-webapp" in "eu-west-2" region is ready
+	
+These lines seem to suggest a problem in setting up the config for kubectl, but I didn't experience any problems using kubectl with the EKS cluster:
+
+	2023-08-22 15:07:51 [✖]  parsing kubectl version string  (upstream error: ) / "0.0.0": Version string empty
+	2023-08-22 15:07:51 [ℹ]  cluster should be functional despite missing (or misconfigured) client binaries
+
+Verify that kubectl can access the cluster:
+
+	$ kubectl get pods -A
+	NAMESPACE     NAME                      READY   STATUS    RESTARTS   AGE
+	kube-system   aws-node-9kh9c            1/1     Running   0          6m37s
+	kube-system   aws-node-nxpjf            1/1     Running   0          6m33s
+	kube-system   coredns-8b48879c8-xjp9k   1/1     Running   0          14m
+	kube-system   coredns-8b48879c8-zxmml   1/1     Running   0          14m
+	kube-system   kube-proxy-rqscq          1/1     Running   0          6m37s
+	kube-system   kube-proxy-w5wbk          1/1     Running   0          6m33s
+
+Change Docker repo in these files if necessary.
+
+Do SW deployment then service:
+
+	$ kubectl apply -f simple-webapp-deployment.yml 
+	deployment.apps/simple-webapp created
+	
+	$ kubectl apply -f simple-webapp-service.yml 
+	service/simple-webapp-svc created
+
+Check they're running:
+
+	$ kubectl get deployment simple-webapp
+	NAME            READY   UP-TO-DATE   AVAILABLE   AGE
+	simple-webapp   3/3     3            3           46s
+	
+	$ kubectl get service simple-webapp-svc
+	NAME                TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+	simple-webapp-svc   ClusterIP   10.100.64.16   <none>        8080/TCP   57s
+		
+Do nginx config map, deployment and service then check:
+
+	$ kubectl apply -f nginx-config.yml
+	configmap/nginx-config created
+	$ kubectl apply -f nginx-deployment.yml
+	deployment.apps/nginx created
+	$ kubectl apply -f nginx-service.yml 
+	service/nginx-svc created
+
+Check:
+
+    $ kubectl get configmap nginx-config
+    NAME           DATA   AGE
+    nginx-config   1      80s
+
+	$ kubectl get deployment nginx
+	NAME    READY   UP-TO-DATE   AVAILABLE   AGE
+	nginx   3/3     3            3           91s
+	
+	$ kubectl get service nginx-svc
+	NAME        TYPE           CLUSTER-IP      EXTERNAL-IP                                                              PORT(S)          AGE
+	nginx-svc   LoadBalancer   10.100.51.154   a7ddfba7461144ebbb6ad2be87dc9127-897879486.eu-west-2.elb.amazonaws.com   8000:31815/TCP   96s
+	
+Using the external IP obtained above, it should now be possible to check the web app in a browser using the following URL, changing the domain to the one you've received from EKS, but retaining port 8000 at the end:
+
+`http://a7ddfba7461144ebbb6ad2be87dc9127-897879486.eu-west-2.elb.amazonaws.com:8000`
+
+Check the front-end (nginx deployment) and back-end (simple-webapp deployment) logs:
+
+    $ kubectl logs -l app=nginx
+    192.168.82.170 - - [22/Aug/2023:14:28:28 +0000] "GET / HTTP/1.1" 200 418 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" "-"
+    
+    $ kubectl logs -l app=simple-webapp
+    192.168.79.249 - - [22/Aug/2023 14:28:28] "GET / HTTP/1.0" 200 -
+
+The web-based EKS Management Console isn't as pretty as the minikube dashboard, and oddly it seems to have some missing information (I couldn't find the nginx ConfigMap in there) but is still useful for obtaining information. For example, we can see our Deployments, Services and Nodes:
+
+![EKS Console - Deployments](README-images/eks-console-deployments.png)
+
+![EKS Console - Services](README-images/eks-console-services.png)
+
+![EKS Console - Nodes](README-images/eks-console-nodes.png)
+
+Destroy cluster (include waiting for CloudFormation stack to finish):
+
+	$ eksctl delete cluster -f eks-cluster.yml --wait
+	2023-08-22 14:45:20 [ℹ]  deleting EKS cluster "simple-webapp"
+	2023-08-22 14:45:21 [ℹ]  will drain 1 unmanaged nodegroup(s) in cluster "simple-webapp"
+	2023-08-22 14:45:21 [ℹ]  starting parallel draining, max in-flight of 1
+	2023-08-22 14:45:21 [ℹ]  cordon node "ip-192-168-30-190.eu-west-2.compute.internal"
+	2023-08-22 14:45:21 [ℹ]  cordon node "ip-192-168-78-162.eu-west-2.compute.internal"
+	2023-08-22 14:46:43 [✔]  drained all nodes: [ip-192-168-30-190.eu-west-2.compute.internal ip-192-168-78-162.eu-west-2.compute.internal]
+	2023-08-22 14:46:43 [ℹ]  deleted 0 Fargate profile(s)
+	2023-08-22 14:46:44 [✔]  kubeconfig has been updated
+	2023-08-22 14:46:44 [ℹ]  cleaning up AWS load balancers created by Kubernetes objects of Kind Service or Ingress
+	2023-08-22 14:47:09 [ℹ]  
+	2 sequential tasks: { delete nodegroup "simple-webapp-nodegroup", delete cluster control plane "simple-webapp" 
+	}
+	2023-08-22 14:47:10 [ℹ]  will delete stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 14:47:10 [ℹ]  waiting for stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup" to get deleted
+	2023-08-22 14:47:10 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 14:47:40 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 14:48:38 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 14:49:21 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-nodegroup-simple-webapp-nodegroup"
+	2023-08-22 14:49:22 [ℹ]  will delete stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:49:22 [ℹ]  waiting for stack "eksctl-simple-webapp-cluster" to get deleted
+	2023-08-22 14:49:22 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:49:52 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:50:33 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:52:14 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
+	2023-08-22 14:52:14 [✔]  all cluster resources were deleted
+
+When wishing to administer the cluster from a different workstation, to update the minikube config for the EKS cluster:
 
     eksctl utils write-kubeconfig -c simple-webapp
