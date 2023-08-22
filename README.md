@@ -1,4 +1,4 @@
-# Kubernetes cluster setup with minikube then Amazon EKS
+# Kubernetes cluster setup with minikube then AWS EKS
 
 ## Goal
 
