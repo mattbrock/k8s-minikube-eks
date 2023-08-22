@@ -1,4 +1,4 @@
-# Kubernetes cluster delivery, first with minikube, then with Amazon EKS
+# Kubernetes cluster setup, first with minikube, then with Amazon EKS
 
 ## Goal
 
