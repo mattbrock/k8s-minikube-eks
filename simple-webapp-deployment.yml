@@ -15,7 +15,7 @@ spec:
       containers:
         - name: simple-webapp
           image: cetre/simple-webapp:latest # Image that will be used to containers in the cluster
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           resources:
             limits:
               memory: "128Mi"

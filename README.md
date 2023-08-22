@@ -166,4 +166,6 @@ Destroy local cluster in minikube:
 	eksctl create cluster -f eks-cluster.yml
 	eksctl delete cluster -f eks-cluster.yml --wait
 
-a
+When moving machines, to update minikube config:
+
+    eksctl utils write-kubeconfig -c simple-webapp
