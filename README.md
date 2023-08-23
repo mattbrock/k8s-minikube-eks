@@ -48,10 +48,6 @@ Build the _simple-webapp_ container image and push it to your own repo as per my
 
 Ensure Docker is running (since minikube uses a Docker container for the cluster) then start minikube:
 
-    minikube start
-    
-You should see the following:
-
     $ minikube start
 	😄  minikube v1.31.2 on Darwin 13.4.1 (arm64)
 	✨  Automatically selected the docker driver
