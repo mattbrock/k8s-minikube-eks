@@ -17,6 +17,10 @@ This will be done in two stages:
 1. Firstly we'll set up a development cluster on our local machine using minikube. 
 1. Then we'll build the cluster on Amazon EKS, which could be used for test and/or production environments. This will use two EC2 instances for the cluster Nodes, plus an ELB for the load balancer.
 
+## Related blog article
+
+This tutorial also appears as an article on my blog [here](https://blog.cetre.co.uk/how-to-set-up-a-kubernetes-cluster-with-minikube-and-then-with-amazon-eks/).
+
 ## Requirements
 
 * [Docker](https://www.docker.com/)
