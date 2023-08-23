@@ -312,7 +312,7 @@ The LoadBalancer external IP shows as "pending" because minikube isn't able to l
 	
 	🏃  Starting tunnel for service nginx-svc.
 	
-In main tab, check the Service again, and it should now have an external IP (localhost):
+In the main Terminal tab, check the Service again, and it should now have an external IP (localhost):
 
 	$ kubectl get service nginx-svc
 	NAME        TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
@@ -325,7 +325,7 @@ Check this in your web browser at `http://127.0.0.1:8000`, then check the logs t
 
 ### minikube dashboard
 
-In a separate tab, open the minikube dashboard:
+In a separate Terminal tab, open the minikube dashboard:
 
 	$ minikube dashboard
 	🔌  Enabling dashboard ...
