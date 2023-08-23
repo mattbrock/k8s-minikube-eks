@@ -1,9 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment # Kubernetes resource kind we are creating
+kind: Deployment
 metadata:
   name: nginx
 spec:
-  replicas: 3  #Number of replicas that will be created for this deployment
+  replicas: 4
   selector:
     matchLabels:
       app: nginx
@@ -14,15 +14,14 @@ spec:
     spec:
       containers:
         - name: nginx
-          #image: cetre/nginx:latest # Image that will be used to containers in the cluster
-          image: nginx:latest # Image that will be used to containers in the cluster
+          image: nginx:latest
           imagePullPolicy: IfNotPresent
           resources:
             limits:
-              memory: "128Mi"
-              cpu: "200m"
+              memory: "128M"
+              cpu: "100m"
           ports:
-            - containerPort: 8000 # The port that the container is running on in the cluster
+            - containerPort: 8000
           volumeMounts:
           - name: nginx-config
             mountPath: /etc/nginx/nginx.conf

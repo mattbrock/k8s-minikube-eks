@@ -4,19 +4,72 @@
 
 [todo]
 
+```
+                                                                                                       
+                               .───────────────────────────────────────────.                           
+                              (                  internet                   )                          
+                               `────────────────────┬──────────────────────'                           
+                                                    │                                                  
+                                                    │                                                  
+                                                    ▼                                                  
+  ┌───────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │        load balancer handling incoming traffic to nginx exposed via Load Balancer service         │
+  └───────────────────────────────────────────────────────────────────────────────────────────────────┘
+  ┌───────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │                                 Kubernetes simple-webapp cluster                                  │
+  │                                                                                                   │
+  │ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐ │
+  │ │                                                                                               │ │
+  │ │          Kubernetes control plane (apiserver, etcd, scheduler, controller-managers)           │ │
+  │ │                                                                                               │ │
+  │ └───────────────────────────────────────────────────────────────────────────────────────────────┘ │
+  │ ┌─────────────────────────────────────────────┐   ┌─────────────────────────────────────────────┐ │
+  │ │                   node 1                    │   │                   node 2                    │ │
+  │ │                                             │   │                                             │ │
+  │ │   ┌─────────────────────────────────────┐   │   │   ┌─────────────────────────────────────┐   │ │
+  │ │   │    Kubernetes kubelet, container    │   │   │   │    Kubernetes kubelet, container    │   │ │
+  │ │   │       runtime, proxies, etc.        │   │   │   │       runtime, proxies, etc.        │   │ │
+  │ │   └─────────────────────────────────────┘   │   │   └─────────────────────────────────────┘   │ │
+  │ │                                             │   │                                             │ │
+  │ │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┼ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐ │ │
+  │ │                 nginx deployment exposed externally via LoadBalancer service                  │ │
+  │ │ │ ┌─────────────────┐ ┌─────────────────┐   │   │   ┌─────────────────┐ ┌─────────────────┐ │ │ │
+  │ │   │      pod 1      │ │      pod 2      │   │   │   │      pod 3      │ │      pod 4      │   │ │
+  │ │ │ │ ┌─────────────┐ │ │ ┌─────────────┐ │   │   │   │ ┌─────────────┐ │ │ ┌─────────────┐ │ │ │ │
+  │ │   │ │    nginx    │ │ │ │    nginx    │ │   │   │   │ │    nginx    │ │ │ │    nginx    │ │   │ │
+  │ │ │ │ │  container  │ │ │ │  container  │ │   │   │   │ │  container  │ │ │ │  container  │ │ │ │ │
+  │ │   │ └─────────────┘ │ │ └─────────────┘ │   │   │   │ └─────────────┘ │ │ └─────────────┘ │   │ │
+  │ │ │ └─────────────────┘ └─────────────────┘   │   │   └─────────────────┘ └─────────────────┘ │ │ │
+  │ │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ─│─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │ │
+  │ │                                             │   │                                             │ │
+  │ │ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┼ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐ │ │
+  │ │         simple-webapp deployment, available internally to nginx via ClusterIP service         │ │
+  │ │ │ ┌─────────────────┐ ┌─────────────────┐   │   │   ┌─────────────────┐ ┌─────────────────┐ │ │ │
+  │ │   │      pod 1      │ │      pod 2      │   │   │   │      pod 3      │ │      pod 4      │   │ │
+  │ │ │ │ ┌─────────────┐ │ │ ┌─────────────┐ │   │   │   │ ┌─────────────┐ │ │ ┌─────────────┐ │ │ │ │
+  │ │   │ │simple-webapp│ │ │ │simple-webapp│ │   │   │   │ │simple-webapp│ │ │ │simple-webapp│ │   │ │
+  │ │ │ │ │  container  │ │ │ │  container  │ │   │   │   │ │  container  │ │ │ │  container  │ │ │ │ │
+  │ │   │ └─────────────┘ │ │ └─────────────┘ │   │   │   │ └─────────────┘ │ │ └─────────────┘ │   │ │
+  │ │ │ └─────────────────┘ └─────────────────┘   │   │   └─────────────────┘ └─────────────────┘ │ │ │
+  │ │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ─│─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │ │
+  │ └─────────────────────────────────────────────┘   └─────────────────────────────────────────────┘ │
+  │                                                                                                   │
+  └───────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
 ## Requirements
 
 * [Docker](https://www.docker.com/)
 * [kubectl](https://kubernetes.io/docs/reference/kubectl/)
 * [minikube](https://minikube.sigs.k8s.io/)
-* AWS CLI
+* [AWS CLI](https://aws.amazon.com/cli/)
 * [eksctl](https://eksctl.io/)
 
 Get Docker from [here](https://docs.docker.com/get-docker/).
 
 To install the rest in Homebrew on macOS:
 
-    brew install kubectl minikube eksctl
+    brew install kubectl minikube awscli eksctl
 
 ## AWS CLI setup
 
@@ -171,6 +224,8 @@ Destroy local cluster in minikube:
 ## Amazon EKS cluster with eksctl
 
 Ensure AWS CLI environment set up correctly etc.
+
+Change region in eksctl config.
 
 Create cluster using eksctl config file:
 

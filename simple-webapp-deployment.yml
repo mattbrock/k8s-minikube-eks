@@ -1,9 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment # Kubernetes resource kind we are creating
+kind: Deployment
 metadata:
   name: simple-webapp
 spec:
-  replicas: 3  #Number of replicas that will be created for this deployment
+  replicas: 4
   selector:
     matchLabels:
       app: simple-webapp
@@ -14,11 +14,11 @@ spec:
     spec:
       containers:
         - name: simple-webapp
-          image: cetre/simple-webapp:latest # Image that will be used to containers in the cluster
-          imagePullPolicy: Always
+          image: cetre/simple-webapp:latest
+          imagePullPolicy: IfNotPresent
           resources:
             limits:
-              memory: "128Mi"
-              cpu: "200m"
+              memory: "128M"
+              cpu: "100m"
           ports:
-            - containerPort: 8080 # The port that the container is running on in the cluster
+            - containerPort: 8080
