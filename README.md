@@ -14,8 +14,8 @@ The Kubernetes cluster will consist of the following:
 
 This will be done in two stages:
 
-* Firstly we'll set up a development cluster on our local machine using minikube. 
-* Then we'll build the cluster on Amazon EKS, which could be used for test and/or production environments. This will use two EC2 instances for the cluster Nodes, plus an ELB for the load balancer.
+1. Firstly we'll set up a development cluster on our local machine using minikube. 
+1. Then we'll build the cluster on Amazon EKS, which could be used for test and/or production environments. This will use two EC2 instances for the cluster Nodes, plus an ELB for the load balancer.
 
 ## Requirements
 
@@ -46,7 +46,7 @@ Build the _simple-webapp_ container image and push it to your own repo as per my
 
 ### Start Kubernetes cluster
 
-Ensure Docker is running, then start minikube:
+Ensure Docker is running (since minikube uses a Docker container for the cluster) then start minikube:
 
     minikube start
     
@@ -351,8 +351,12 @@ This provides a handy and nice-looking dashboard, making it easy to see exactly 
 
 Once finished, delete the local minikube cluster:
 
-    minikube delete
-    
+	$ minikube delete
+	🔥  Deleting "minikube" in docker ...
+	🔥  Deleting container "minikube" ...
+	🔥  Removing /Users/brock/.minikube/machines/minikube ...
+	💀  Removed all traces of the "minikube" cluster.    
+
 ## Amazon EKS cluster with eksctl
 
 Only proceed with this if you're absolutely sure you are using the correct AWS account/profile before you begin, in a safe test environment completely isolated from any production systems or other important infrastructure, otherwise you could potentially break something important.
@@ -374,7 +378,11 @@ The _eks-cluster.yml_ file defines the configuration for eksctl to use to create
         instanceType: t3.large
         desiredCapacity: 2
         
-This defines the name and the desired Kubernetes version, and creates a Node Group consisting of two Nodes. The Nodes are EC2 instances of type t3.large. If you're not using the eu-west-2 region, then change it accordingly.
+This defines the name and the desired Kubernetes version, and creates a Node Group consisting of two Nodes. The Nodes are EC2 instances of type t3.large. 
+
+If you're not using the eu-west-2 region, change it accordingly.
+
+eksctl handles everything else automatically, including creation of VPC with subnets and routes, Security Groups, IAM permissions, etc. These details can be specified within the eksctl config file if desired.
 
 Create the EKS cluster using the eksctl config file:
 
@@ -436,7 +444,7 @@ Create the EKS cluster using the eksctl config file:
 	2023-08-22 15:07:51 [ℹ]  cluster should be functional despite missing (or misconfigured) client binaries
 	2023-08-22 15:07:51 [✔]  EKS cluster "simple-webapp" in "eu-west-2" region is ready
 	
-These lines seem to suggest a problem in setting up the config for kubectl, but I didn't experience any problems using kubectl with the EKS cluster:
+These lines seem to suggest a problem in setting up the config for kubectl, but I didn't experience any problems using kubectl with the EKS cluster, so it seems to just be a verification bug:
 
 	2023-08-22 15:07:51 [✖]  parsing kubectl version string  (upstream error: ) / "0.0.0": Version string empty
 	2023-08-22 15:07:51 [ℹ]  cluster should be functional despite missing (or misconfigured) client binaries
@@ -476,8 +484,10 @@ Create nginx ConfigMap, Deployment and Service:
 
 	$ kubectl apply -f nginx-config.yml
 	configmap/nginx-config created
+	
 	$ kubectl apply -f nginx-deployment.yml
 	deployment.apps/nginx created
+	
 	$ kubectl apply -f nginx-service.yml 
 	service/nginx-svc created
 
@@ -501,7 +511,7 @@ It should now be possible to check the web app in a browser using the following 
 
 (It may take a couple of minutes before this responds, whilst the ELB is provisioned.)
 
-Check the front-end (nginx Deployment) and back-end (simple-webapp Deployment) logs to see that the requests came in:
+Check the front-end (nginx Deployment) and back-end (_simple-webapp_ Deployment) logs to see that the requests came in:
 
     $ kubectl logs -l app=nginx
     192.168.82.170 - - [22/Aug/2023:14:28:28 +0000] "GET / HTTP/1.1" 200 418 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" "-"
