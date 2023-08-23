@@ -69,6 +69,7 @@ Verify that kubectl can access the cluster:
 	
 Change Docker repo in these files if necessary.
 
+
 Do SW deployment then service:
 
 	$ kubectl apply -f simple-webapp-deployment.yml 
@@ -80,7 +81,7 @@ Do SW deployment then service:
 Check they're running:
 
 	$ kubectl get deployment simple-webapp
-	NAME            READY   UP-TO-DATE   AVAILABLE   AGE
+    NAME            READY   UP-TO-DATE   AVAILABLE   AGE
 	simple-webapp   3/3     3            3           3m5s
 	
 	$ kubectl get service simple-webapp-svc
@@ -302,7 +303,7 @@ Check the front-end (nginx deployment) and back-end (simple-webapp deployment) l
     $ kubectl logs -l app=simple-webapp
     192.168.79.249 - - [22/Aug/2023 14:28:28] "GET / HTTP/1.0" 200 -
 
-The web-based EKS Management Console isn't as pretty as the minikube dashboard, and oddly it seems to have some missing information (I couldn't find the nginx ConfigMap in there) but is still useful for obtaining information. For example, we can see our Deployments, Services and Nodes:
+The web-based EKS Management Console isn't as pretty as the minikube dashboard, and oddly it seems to have some missing information (I couldn't find the nginx ConfigMap in there, for example) but is still useful for obtaining information. For example, we can see our Deployments, Services and Nodes:
 
 ![EKS Console - Deployments](README-images/eks-console-deployments.png)
 
