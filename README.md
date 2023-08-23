@@ -1,10 +1,21 @@
-# Kubernetes cluster setup with minikube then AWS EKS
+# How to set up a Kubernetes cluster with minikube and then with Amazon EKS
 
-## Goal
+## Purpose of this tutorial
 
-[todo]
+Our goal is to create a Kubernetes cluster serving the output of _simple-webapp_ via nginx. _simple-webapp_ is a simple Python app I wrote for these kinds of projects, which outputs a basic web page as proof of concept. In a real production environment, this would be a full-blown web application of some kind.
+
+The Kubernetes cluster will consist of the following:
+
+* Two cluster Nodes.
+* A _simple-webapp_ Deployment consisting of four Pods, each running the _simple-webapp_ container, exposed internally to nginx via a ClusterIP Service.
+* An nginx Deployment consisting of four Pods, each running an nginx container with a modified _nginx.conf_ file made available via a ConfigMap which allows nginx to reverse-proxy traffic to the _simple-webapp_ service, exposed externally via a LoadBalancer Service.
 
 ![cluster diagram](README-images/cluster-diagram.png)
+
+This will be done in two stages:
+
+* Firstly we'll set up a development cluster on our local machine using minikube. 
+* Then we'll build the cluster on Amazon EKS, which could be used for test and/or production environments. This will use two EC2 instances for the cluster Nodes, plus an ELB for the load balancer.
 
 ## Requirements
 
@@ -13,6 +24,7 @@
 * [minikube](https://minikube.sigs.k8s.io/)
 * [AWS CLI](https://aws.amazon.com/cli/)
 * [eksctl](https://eksctl.io/)
+* An account on [Amazon Web Services](https://aws.amazon.com/)
 
 Get Docker from [here](https://docs.docker.com/get-docker/).
 
@@ -22,7 +34,7 @@ To install the rest in Homebrew on macOS:
 
 ## AWS CLI setup
 
-[todo]
+Configure credentials and config for AWS CLI as per the [official documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html). Make absolutely sure you are using the correct AWS account/profile before you begin, in a safe test environment completely isolated from any production systems or other important infrastructure, otherwise you could potentially break something important.
 
 ## Build _simple-webapp_ container image
 
@@ -32,13 +44,13 @@ Build the _simple-webapp_ container image and push it to your own repo as per my
 
 ## Local cluster with minikube
 
-Ensure Docker is running.
+### Start Kubernetes cluster
 
-Start minikube:
+Ensure Docker is running, then start minikube:
 
     minikube start
     
-Should see the following:
+You should see the following:
 
     $ minikube start
 	😄  minikube v1.31.2 on Darwin 13.4.1 (arm64)
@@ -68,19 +80,69 @@ Verify that kubectl can access the cluster:
 	kube-system   kube-proxy-zgz4z                   1/1     Running   0              6m11s
 	kube-system   kube-scheduler-minikube            1/1     Running   0              6m26s
 	kube-system   storage-provisioner                1/1     Running   1 (6m7s ago)   6m25s
+
+### Create Deployment and Service for _simple-webapp_	
+The Kubernetes Deployment for _simple-webapp_ is in the file _simple-webapp-deployment.yml_:
+
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: simple-webapp
+    spec:
+      replicas: 4
+      selector:
+        matchLabels:
+          app: simple-webapp
+      template:
+        metadata:
+          labels:
+            app: simple-webapp
+        spec:
+          containers:
+            - name: simple-webapp
+              image: cetre/simple-webapp:latest
+              imagePullPolicy: IfNotPresent
+              resources:
+                limits:
+                  memory: "128M"
+                  cpu: "100m"
+              ports:
+                - containerPort: 8080
+
+This creates four Pods, each running the _cetre/simple-webapp_ Container with tight limits on memory and CPU usage, and the Container port set to 8080.
 	
-Change Docker repo in these files if necessary.
+If you've pushed the _simple-webapp_ image to your own Docker Hub repository, change the Docker Hub repository _cetre/simple-webapp_ to your own repository.
 
-
-Do SW deployment then service:
+Create the _simple-webapp_ Deployment:
 
 	$ kubectl apply -f simple-webapp-deployment.yml 
 	deployment.apps/simple-webapp created
-	
+
+A Kubernetes Services is required to expose the _simple-webapp_ Deployment on an internal IP and port, so that nginx will be able to talk to it. The Service for _simple-webapp_ is defined in the file _simple-webapp-service.yml_:
+
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: simple-webapp-svc
+      labels:
+        name: simple-webapp-svc
+    spec:
+      ports:
+        - port: 8080
+          targetPort: 8080
+          protocol: TCP
+      selector:
+        app: simple-webapp
+      type: ClusterIP
+      
+This creates a ClusterIP Service to expose port 8080 from the Container internally within the cluster on port 8080.
+
+Create the _simple-webapp_ Service:
+
 	$ kubectl apply -f simple-webapp-service.yml 
 	service/simple-webapp-svc created
 
-Check they're running:
+Check the _simple-webapp_ Deployment and Service are running:
 
 	$ kubectl get deployment simple-webapp
     NAME            READY   UP-TO-DATE   AVAILABLE   AGE
@@ -90,29 +152,144 @@ Check they're running:
 	NAME                TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
 	simple-webapp-svc   ClusterIP   10.105.121.100   <none>        8080/TCP   3m48s
 	
-Port forward to service to check it responds:
+Forward a port to the Service to check it responds:
 
 	$ kubectl port-forward service/simple-webapp-svc 8080:8080
 	Forwarding from 127.0.0.1:8080 -> 8080
 	Forwarding from [::1]:8080 -> 8080
 	
-Check in web browser `http://localhost:8080`. CTRL-C to stop port-forwarding.
+Check the result in your web browser at `http://localhost:8080`. Type CTRL-C to stop port-forwarding.
 
-Check logs:
+Check the logs to confirm the request:
 
 	$ kubectl logs -l app=simple-webapp
 	127.0.0.1 - - [22/Aug/2023 07:10:27] "GET / HTTP/1.1" 200 -
-	
-Do nginx config map, deployment and service then check:
+
+### Create ConfigMap, Deployment and Service for nginx
+
+A Kubernetes ConfigMap is used for the nginx configuration file _nginx.conf_ so that this can easily be changed within the ConfigMap configuration without having to build, push and redeploy new containers whenever the config is changed. The configuration defines a reverse proxy to pass requests to the _simple-webapp_ Service. 
+
+The ConfigMap is defined in the _nginx-config.yml_ file:
+
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: nginx-config
+    data:
+      nginx.conf: |
+    
+        user  nginx;
+        worker_processes  auto;
+        
+        error_log  /var/log/nginx/error.log notice;
+        pid        /var/run/nginx.pid;
+        
+        
+        events {
+            worker_connections  1024;
+        }
+        
+        
+        http {
+            include       /etc/nginx/mime.types;
+            default_type  application/octet-stream;
+        
+            log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                              '$status $body_bytes_sent "$http_referer" '
+                              '"$http_user_agent" "$http_x_forwarded_for"';
+        
+            access_log  /var/log/nginx/access.log  main;
+        
+            sendfile        on;
+            #tcp_nopush     on;
+        
+            keepalive_timeout  65;
+        
+            #gzip  on;
+        
+            server {
+        
+                listen 8000;
+        
+                location / {
+                    proxy_pass http://simple-webapp-svc:8080;
+                    proxy_set_header Host $http_host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                }
+        
+            }
+        
+            include /etc/nginx/conf.d/*.conf;
+        }
+
+Create the ConfigMap:
 
 	$ kubectl apply -f nginx-config.yml
 	configmap/nginx-config created
-	$ kubectl apply -f nginx-deployment.yml
-	deployment.apps/nginx created
-	$ kubectl apply -f nginx-service.yml 
-	service/nginx-svc created
 
-Check:
+The nginx Deployment is defined in the _nginx-deployment.yml_ file:
+
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: nginx
+    spec:
+      replicas: 4
+      selector:
+        matchLabels:
+          app: nginx
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+            - name: nginx
+              image: nginx:latest
+              imagePullPolicy: IfNotPresent
+              resources:
+                limits:
+                  memory: "128M"
+                  cpu: "100m"
+              ports:
+                - containerPort: 8000
+              volumeMounts:
+              - name: nginx-config
+                mountPath: /etc/nginx/nginx.conf
+                subPath: nginx.conf
+                readOnly: true
+          volumes:
+          - name: nginx-config
+            configMap:
+              name: nginx-config
+              items:
+              - key: nginx.conf
+                path: nginx.conf
+	
+This creates four Pods, each running the nginx Container with tight limits on memory and CPU usage, and the Container port set to 8000, which is the port nginx is listening on. It also mounts the nginx-config ConfigMap to _/etc/nginx/nginx.conf_.
+
+The nginx Service is defined in the _nginx-service.yml_ file:
+
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: nginx-svc
+      labels:
+        name: nginx-svc
+    spec:
+      ports:
+        - port: 8000
+          targetPort: 8000
+          protocol: TCP
+      selector:
+        app: nginx
+      type: LoadBalancer	
+	
+This creates a LoadBalancer Service to expose port 8000 from the Containers externally on port 8000 via a load balancer.
+
+Check the nginx ConfigMap, Deployment and Service are running:
 
     $ kubectl get configmap nginx-config
     NAME           DATA   AGE
@@ -126,7 +303,7 @@ Check:
 	NAME        TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
 	nginx-svc   LoadBalancer   10.110.39.225   <pending>     8000:32689/TCP   7m49s
 
-LB IP shows as "pending". In a separate tab, create a tunnel to the LB:
+The LoadBalancer external IP shows as "pending" because minikube isn't able to launch an actual load balancer for the LoadBalancer Service, so in this development environment we can check this by creating a tunnel to the LoadBalancer Service. Do this in a separate Terminal tab:
 
     $ minikube tunnel
 	✅  Tunnel successfully started
@@ -135,16 +312,18 @@ LB IP shows as "pending". In a separate tab, create a tunnel to the LB:
 	
 	🏃  Starting tunnel for service nginx-svc.
 	
-In main tab, check service again, it now has an external IP (localhost):
+In main tab, check the Service again, and it should now have an external IP (localhost):
 
 	$ kubectl get service nginx-svc
 	NAME        TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
 	nginx-svc   LoadBalancer   10.110.39.225   127.0.0.1     8000:32689/TCP   10m
 
-IP now assigned. Check in web browser `http://localhost:8000` then check logs:
+Check this in your web browser at `http://127.0.0.1:8000`, then check the logs to see the request:
 
 	$ kubectl logs -l app=nginx
 	10.244.0.1 - - [22/Aug/2023:07:31:37 +0000] "GET / HTTP/1.1" 200 418 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" "-"
+
+### minikube dashboard
 
 In a separate tab, open the minikube dashboard:
 
@@ -166,17 +345,38 @@ The dashboard should open in your web browser:
 
 ![minikube dashboard](README-images/minikube-dashboard.png)
 
-Destroy local cluster in minikube:
+This provides a handy and nice-looking dashboard, making it easy to see exactly what's happening within all the cluster components.
+
+### Delete minikube cluster
+
+Once finished, delete the local minikube cluster:
 
     minikube delete
     
 ## Amazon EKS cluster with eksctl
 
-Ensure AWS CLI environment set up correctly etc.
+Only proceed with this if you're absolutely sure you are using the correct AWS account/profile before you begin, in a safe test environment completely isolated from any production systems or other important infrastructure, otherwise you could potentially break something important.
 
-Change region in eksctl config.
+### Create Kubernetes cluster in EKS
 
-Create cluster using eksctl config file:
+The _eks-cluster.yml_ file defines the configuration for eksctl to use to create the EKS cluster:
+
+    apiVersion: eksctl.io/v1alpha5
+    kind: ClusterConfig
+    
+    metadata:
+      name: simple-webapp
+      region: eu-west-2
+      version: "1.27"
+    
+    nodeGroups:
+      - name: simple-webapp-nodegroup
+        instanceType: t3.large
+        desiredCapacity: 2
+        
+This defines the name and the desired Kubernetes version, and creates a Node Group consisting of two Nodes. The Nodes are EC2 instances of type t3.large. If you're not using the eu-west-2 region, then change it accordingly.
+
+Create the EKS cluster using the eksctl config file:
 
 	$ eksctl create cluster -f eks-cluster.yml
 	2023-08-22 14:54:07 [ℹ]  eksctl version 0.153.0-dev+a79b3826a.2023-08-18T10:03:46Z
@@ -241,7 +441,7 @@ These lines seem to suggest a problem in setting up the config for kubectl, but 
 	2023-08-22 15:07:51 [✖]  parsing kubectl version string  (upstream error: ) / "0.0.0": Version string empty
 	2023-08-22 15:07:51 [ℹ]  cluster should be functional despite missing (or misconfigured) client binaries
 
-Verify that kubectl can access the cluster:
+Verify that kubectl can access the new EKS cluster:
 
 	$ kubectl get pods -A
 	NAMESPACE     NAME                      READY   STATUS    RESTARTS   AGE
@@ -252,9 +452,9 @@ Verify that kubectl can access the cluster:
 	kube-system   kube-proxy-rqscq          1/1     Running   0          6m37s
 	kube-system   kube-proxy-w5wbk          1/1     Running   0          6m33s
 
-Change Docker repo in these files if necessary.
+### Create Deployments, Services and ConfigMap for _simple-webapp_ and nginx
 
-Do SW deployment then service:
+Create _simple-webapp_ Deployment and Service:
 
 	$ kubectl apply -f simple-webapp-deployment.yml 
 	deployment.apps/simple-webapp created
@@ -272,7 +472,7 @@ Check they're running:
 	NAME                TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
 	simple-webapp-svc   ClusterIP   10.100.64.16   <none>        8080/TCP   57s
 		
-Do nginx config map, deployment and service then check:
+Create nginx ConfigMap, Deployment and Service:
 
 	$ kubectl apply -f nginx-config.yml
 	configmap/nginx-config created
@@ -281,7 +481,7 @@ Do nginx config map, deployment and service then check:
 	$ kubectl apply -f nginx-service.yml 
 	service/nginx-svc created
 
-Check:
+Check they're running:
 
     $ kubectl get configmap nginx-config
     NAME           DATA   AGE
@@ -295,11 +495,13 @@ Check:
 	NAME        TYPE           CLUSTER-IP      EXTERNAL-IP                                                              PORT(S)          AGE
 	nginx-svc   LoadBalancer   10.100.51.154   a7ddfba7461144ebbb6ad2be87dc9127-897879486.eu-west-2.elb.amazonaws.com   8000:31815/TCP   96s
 	
-Using the external IP obtained above, it should now be possible to check the web app in a browser using the following URL, changing the domain to the one you've received from EKS, but retaining port 8000 at the end:
+It should now be possible to check the web app in a browser using the following URL, changing the domain to the one you've received from EKS in the EXTERNAL-IP column, but retaining port 8000 at the end:
 
 `http://a7ddfba7461144ebbb6ad2be87dc9127-897879486.eu-west-2.elb.amazonaws.com:8000`
 
-Check the front-end (nginx deployment) and back-end (simple-webapp deployment) logs:
+(It may take a couple of minutes before this responds, whilst the ELB is provisioned.)
+
+Check the front-end (nginx Deployment) and back-end (simple-webapp Deployment) logs to see that the requests came in:
 
     $ kubectl logs -l app=nginx
     192.168.82.170 - - [22/Aug/2023:14:28:28 +0000] "GET / HTTP/1.1" 200 418 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" "-"
@@ -315,7 +517,11 @@ The web-based EKS Management Console isn't as pretty as the minikube dashboard, 
 
 ![EKS Console - Nodes](README-images/eks-console-nodes.png)
 
-Destroy cluster (include waiting for CloudFormation stack to finish):
+It's also possible to see the provisioned EC2 instances used as Kubernetes Nodes, and the provisioned ELB used as the load balancer, in the EC2 Management Console.
+
+### Delete EKS cluster
+
+Once finished, delete the cluster (include waiting for the CloudFormation stack to finish), making absolutely sure you're using the correct account/profile and deleting the correct cluster:
 
 	$ eksctl delete cluster -f eks-cluster.yml --wait
 	2023-08-22 14:45:20 [ℹ]  deleting EKS cluster "simple-webapp"
@@ -344,6 +550,8 @@ Destroy cluster (include waiting for CloudFormation stack to finish):
 	2023-08-22 14:52:14 [ℹ]  waiting for CloudFormation stack "eksctl-simple-webapp-cluster"
 	2023-08-22 14:52:14 [✔]  all cluster resources were deleted
 
-When wishing to administer the cluster from a different workstation, to update the minikube config for the EKS cluster:
+### Working on an existing EKS cluster from a different local machine
+
+When wishing to administer the cluster from a different local machine, do this to update the minikube config for the running EKS cluster:
 
     eksctl utils write-kubeconfig -c simple-webapp
