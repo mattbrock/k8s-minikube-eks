@@ -146,7 +146,7 @@ Check the _simple-webapp_ Deployment and Service are running:
 
 	$ kubectl get deployment simple-webapp
     NAME            READY   UP-TO-DATE   AVAILABLE   AGE
-	simple-webapp   3/3     3            3           3m5s
+	simple-webapp   4/4     4            4           3m5s
 	
 	$ kubectl get service simple-webapp-svc
 	NAME                TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
@@ -297,7 +297,7 @@ Check the nginx ConfigMap, Deployment and Service are running:
 
 	$ kubectl get deployment nginx
 	NAME    READY   UP-TO-DATE   AVAILABLE   AGE
-	nginx   3/3     3            3           7m34s
+	nginx   4/4     4            4           7m34s
 	
 	$ kubectl get service nginx-svc
 	NAME        TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
@@ -474,7 +474,7 @@ Check they're running:
 
 	$ kubectl get deployment simple-webapp
 	NAME            READY   UP-TO-DATE   AVAILABLE   AGE
-	simple-webapp   3/3     3            3           46s
+	simple-webapp   4/4     4            4           46s
 	
 	$ kubectl get service simple-webapp-svc
 	NAME                TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
@@ -499,7 +499,7 @@ Check they're running:
 
 	$ kubectl get deployment nginx
 	NAME    READY   UP-TO-DATE   AVAILABLE   AGE
-	nginx   3/3     3            3           91s
+	nginx   4/4     4            4           91s
 	
 	$ kubectl get service nginx-svc
 	NAME        TYPE           CLUSTER-IP      EXTERNAL-IP                                                              PORT(S)          AGE
