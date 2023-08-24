@@ -529,6 +529,8 @@ The web-based EKS Management Console isn't as pretty as the minikube dashboard, 
 
 It's also possible to see the provisioned EC2 instances used as Kubernetes Nodes, and the provisioned ELB used as the load balancer, in the EC2 Management Console.
 
+All of this AWS infrastructure can of course also be queried and managed via the AWS CLI.
+
 ### Delete EKS cluster
 
 Once finished, delete the cluster (include waiting for the CloudFormation stack to finish), making absolutely sure you're using the correct account/profile and deleting the correct cluster:
@@ -565,3 +567,12 @@ Once finished, delete the cluster (include waiting for the CloudFormation stack 
 When wishing to administer the cluster from a different local machine, do this to update the minikube config for the running EKS cluster:
 
     eksctl utils write-kubeconfig -c simple-webapp
+
+## Next steps
+
+This project could be expanded and built on in a number of ways, for example:
+
+* Replace _simple-webapp_ with a more complex application requiring a database, then add a database Deployment and Service with StatefulSets for persistent storage.
+* Replace the nginx Deployment and LoadBalancer Service with a Kubernetes Ingress solution such as [Ingress-NGINX Controller](https://github.com/kubernetes/ingress-nginx).
+* Add TLS termination, plus associated certificate management with a Kubernetes Controller such as [cert-manager](https://cert-manager.io/).
+* Expand eksctl to manage specific VPC subnets and routes, Security Groups, IAM permissions, etc.
