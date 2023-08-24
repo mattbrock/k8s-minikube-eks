@@ -1,6 +1,6 @@
 # How to set up a Kubernetes cluster with minikube and then with Amazon EKS
 
-## Purpose of this tutorial
+## Purpose of this tutorial project
 
 Our goal is to create a Kubernetes cluster serving the output of _simple-webapp_ via nginx. _simple-webapp_ is a simple Python app I wrote for these kinds of projects, which outputs a basic web page as proof of concept. In a real production environment, this would be a full-blown web application of some kind.
 
@@ -19,7 +19,7 @@ This will be done in two stages:
 
 ## Related blog article
 
-This tutorial also appears as an article on my blog [here](https://blog.cetre.co.uk/how-to-set-up-a-kubernetes-cluster-with-minikube-and-then-with-amazon-eks/).
+This tutorial project also appears as an article on my blog [here](https://blog.cetre.co.uk/how-to-set-up-a-kubernetes-cluster-with-minikube-and-then-with-amazon-eks/).
 
 ## Requirements
 
